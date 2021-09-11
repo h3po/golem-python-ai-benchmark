@@ -28,7 +28,7 @@ from utils import (
 
 TEST_TIMEOUT = timedelta(minutes=30)
 
-arg_parser = build_parser("Run phoronix ai-benchmark on Golem provider.")
+arg_parser = build_parser("Run ai-benchmark on Golem provider.")
 arg_parser.add_argument("--max-workers", type=int, default=1,
     help="The maximum number of nodes we want to run the benchmark on (default is 1)")
 arg_parser.add_argument("--min-cpu", type=int, default=2,
@@ -42,17 +42,15 @@ async def run_benchmark(ctx: WorkContext, tasks: AsyncIterable[Task]):
     async for task in tasks:
         ctx.run(f"/benchmark.py")
         output_file="/golem/output/benchmark.log"
-        try:
-            ctx.download_file(output_file, f"benchmark.log")
 
-            yield ctx.commit(timeout=TEST_TIMEOUT)
+        ctx.download_file(output_file, f"benchmark.log")
 
-            with open(output_file) as f:
-                result = f.readline()
-                if "Score:" in result:
-                    task.accept_result(result)
-        finally:
-            output_file.unlink()
+        yield ctx.commit(timeout=TEST_TIMEOUT)
+
+        with open(output_file) as f:
+            result = f.readline()
+            if "Score:" in result:
+                task.accept_result(result)
 
 async def main(args):
     package = await vm.repo(
@@ -62,7 +60,7 @@ async def main(args):
     )
 
     async with Golem(
-        budget=100.0,
+        budget=1.0,
         subnet_tag=args.subnet_tag,
         driver=args.driver,
         network=args.network,
